@@ -426,3 +426,78 @@ Oct 06, 2026 8:51:17 AM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notif
 INFO: Unsupported notification method: $/setTrace
 Oct 06, 2026 8:51:27 AM org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint notify
 INFO: Unsupported notification method: $/setTrace
+2026.10.06 09:04:20 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:20 WARN  no build target for: /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java
+2026.10.06 09:04:20 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:20 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:21 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:20 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:21 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:24 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:24 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:46 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:50 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:50 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:54 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:54 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+Oct 06, 2026 9:04:54 AM org.eclipse.lsp4j.jsonrpc.RemoteEndpoint fallbackResponseError
+SEVERE: Internal error: Range [-1, 2585) out of bounds for length 9080
+java.lang.StringIndexOutOfBoundsException: Range [-1, 2585) out of bounds for length 9080
+	at java.base/jdk.internal.util.Preconditions$1.apply(Preconditions.java:55)
+	at java.base/jdk.internal.util.Preconditions$1.apply(Preconditions.java:52)
+	at java.base/jdk.internal.util.Preconditions$4.apply(Preconditions.java:213)
+	at java.base/jdk.internal.util.Preconditions$4.apply(Preconditions.java:210)
+	at java.base/jdk.internal.util.Preconditions.outOfBounds(Preconditions.java:98)
+	at java.base/jdk.internal.util.Preconditions.outOfBoundsCheckFromToIndex(Preconditions.java:112)
+	at java.base/jdk.internal.util.Preconditions.checkFromToIndex(Preconditions.java:349)
+	at java.base/java.lang.String.checkBoundsBeginEnd(String.java:5224)
+	at java.base/java.lang.String.substring(String.java:3186)
+	at scala.meta.internal.pc.JavaMetalsGlobal.findIndentifierStartAndEnd(JavaMetalsGlobal.scala:87)
+	at scala.meta.internal.pc.JavaMetalsGlobal.isAtIdentifier(JavaMetalsGlobal.scala:137)
+	at scala.meta.internal.pc.JavaDocumentHighlightProvider.atIdentifier$1(JavaDocumentHighlightProvider.scala:53)
+	at scala.meta.internal.pc.JavaDocumentHighlightProvider.documentHighlight(JavaDocumentHighlightProvider.scala:55)
+	at scala.meta.internal.pc.JavaDocumentHighlightProvider.documentHighlight(JavaDocumentHighlightProvider.scala:25)
+	at scala.meta.internal.pc.JavaPresentationCompiler.documentHighlight(JavaPresentationCompiler.scala:112)
+	at scala.meta.internal.metals.Compilers.$anonfun$documentHighlight$1(Compilers.scala:908)
+	at scala.meta.internal.metals.Compilers.$anonfun$withPCAndAdjustLsp$4(Compilers.scala:1543)
+	at scala.Option.map(Option.scala:242)
+	at scala.meta.internal.metals.Compilers.$anonfun$withPCAndAdjustLsp$3(Compilers.scala:1543)
+	at scala.Option.flatMap(Option.scala:283)
+	at scala.meta.internal.metals.Compilers.withPCAndAdjustLsp(Compilers.scala:1535)
+	at scala.meta.internal.metals.Compilers.documentHighlight(Compilers.scala:903)
+	at scala.meta.internal.metals.MetalsLspService.$anonfun$documentHighlights$1(MetalsLspService.scala:1030)
+	at scala.meta.internal.metals.CancelTokens$.future(CancelTokens.scala:38)
+	at scala.meta.internal.metals.MetalsLspService.documentHighlights(MetalsLspService.scala:1029)
+	at scala.meta.internal.metals.WorkspaceLspService.documentHighlights(WorkspaceLspService.scala:543)
+	at scala.meta.metals.lsp.DelegatingScalaService.documentHighlights(DelegatingScalaService.scala:83)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:104)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:565)
+	at org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint.lambda$recursiveFindRpcMethods$0(GenericEndpoint.java:65)
+	at org.eclipse.lsp4j.jsonrpc.services.GenericEndpoint.request(GenericEndpoint.java:128)
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.handleRequest(RemoteEndpoint.java:265)
+	at org.eclipse.lsp4j.jsonrpc.RemoteEndpoint.consume(RemoteEndpoint.java:195)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.handleMessage(StreamMessageProducer.java:189)
+	at org.eclipse.lsp4j.jsonrpc.json.StreamMessageProducer.listen(StreamMessageProducer.java:97)
+	at org.eclipse.lsp4j.jsonrpc.json.ConcurrentMessageProcessor.run(ConcurrentMessageProcessor.java:97)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:545)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:330)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1090)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:614)
+	at java.base/java.lang.Thread.run(Thread.java:1516)
+
+2026.10.06 09:04:54 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:54 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:56 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:56 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:57 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:56 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:57 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:57 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:58 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:57 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:57 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:04:58 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:12:47 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:12:48 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:12:49 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.
+2026.10.06 09:12:51 INFO  no build target found for /Users/vitor/projects/estudos/outbox-relay/src/test/java/RelayTest.java. Using fallback presentation compiler.

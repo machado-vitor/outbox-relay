@@ -63,7 +63,7 @@ class RelayTest {
     /// reads back only what it produced.
     @BeforeEach
     void startClean() throws Exception {
-        db.createStatement().execute("TRUNCATE orders, outbox RESTART IDENTITY");
+        db.createStatement().execute("SET lock_timeout = '5s'; TRUNCATE orders, outbox RESTART IDENTITY");
         var props = new Properties();
         props.put("bootstrap.servers", KAFKA.getBootstrapServers());
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
@@ -101,21 +101,22 @@ class RelayTest {
     /// Tx A takes the lower id but commits after tx B. A cursor on id would skip A; the relay does not.
     @Test
     void aRowThatBecomesVisibleLateIsStillPublished() throws Exception {
-        var a = connect();
-        a.setAutoCommit(false);
-        insertOutbox(a, "A");   // id 1, not committed: invisible to the relay
-        insertOutbox(db, "B");  // id 2, committed
+        try (var a = connect()) {
+            a.setAutoCommit(false);
+            insertOutbox(a, "A");   // id 1, not committed: invisible to the relay
+            insertOutbox(db, "B");  // id 2, committed
 
-        assertEquals(1, relay.sweep(), "only B is visible");
-        assertEquals(Set.of("B"), keys(consume(1)));
+            assertEquals(1, relay.sweep(), "only B is visible");
+            assertEquals(Set.of("B"), keys(consume(1)));
 
-        a.commit();             // now id 1 appears, below the highest id already published
+            a.commit();             // now id 1 appears, below the highest id already published
 
-        assertEquals(1, relay.sweep(), "A is picked up because it is unpublished, not because of its id");
-        var records = consume(2);
-        assertEquals(2, records.size());
-        assertEquals(Set.of("A", "B"), keys(records));
-        assertEquals("0", scalar("SELECT count(*) FROM outbox WHERE published_at IS NULL"));
+            assertEquals(1, relay.sweep(), "A is picked up because it is unpublished, not because of its id");
+            var records = consume(2);
+            assertEquals(2, records.size());
+            assertEquals(Set.of("A", "B"), keys(records));
+            assertEquals("0", scalar("SELECT count(*) FROM outbox WHERE published_at IS NULL"));
+        }
     }
 
     /// Broker unreachable: the row stays unpublished and the next sweep retries it.
