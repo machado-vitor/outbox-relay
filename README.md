@@ -25,5 +25,6 @@ To run it for real against your own Postgres and Kafka:
 PG_URL=jdbc:postgresql://localhost:5432/outbox KAFKA=localhost:9092 mvn -q compile exec:java -Dexec.mainClass=Relay
 ```
 
+Compared side by side in [outbox-compared](https://github.com/machado-vitor/outbox-compared).
 Siblings: [outbox-debezium](https://github.com/machado-vitor/outbox-debezium) (CDC, same table) and
 [outbox-jdbc-source](https://github.com/machado-vitor/outbox-jdbc-source) (the Kafka Connect poller that loses events).
