@@ -16,7 +16,6 @@ import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,8 +34,7 @@ class RelayTest {
             .withUsername("outbox").withPassword("outbox").withDatabaseName("outbox")
             .withCopyFileToContainer(MountableFile.forHostPath("schema.sql"), "/docker-entrypoint-initdb.d/schema.sql");
 
-    static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka:4.3.1")
-            .withEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false");
+    static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka:4.3.1");
 
     static Connection db;
     static Relay relay;
@@ -44,17 +42,11 @@ class RelayTest {
     @BeforeAll
     static void start() throws Exception {
         Startables.deepStart(POSTGRES, KAFKA).join();
+        db = connect();
         try (var admin = Admin.create(Map.of("bootstrap.servers", (Object) KAFKA.getBootstrapServers()))) {
             admin.createTopics(List.of(new NewTopic(Relay.TOPIC, 3, (short) 1))).all().get();
         }
-        db = connect();
         relay = new Relay(connect(), Relay.producer(KAFKA.getBootstrapServers()));
-    }
-
-    @AfterAll
-    static void stop() {
-        KAFKA.stop();
-        POSTGRES.stop();
     }
 
     static KafkaConsumer<String, String> topic;
@@ -130,7 +122,7 @@ class RelayTest {
         var docker = KAFKA.getDockerClient();
         docker.pauseContainerCmd(KAFKA.getContainerId()).exec();
         try {
-            assertEquals(0, relay.sweep(), "nothing acked, nothing marked");
+            assertThrows(Exception.class, relay::sweep, "nothing acked: the sweep aborts, nothing is marked");
             assertEquals("1", scalar("SELECT count(*) FROM outbox WHERE published_at IS NULL"));
         } finally {
             docker.unpauseContainerCmd(KAFKA.getContainerId()).exec();
@@ -138,7 +130,6 @@ class RelayTest {
 
         assertEquals(1, relay.sweep(), "same row, published on the next sweep");
         var records = consume(1);
-        assertTrue(records.size() >= 1);
         assertEquals(1, records.stream().map(r -> header(r, "event_id")).distinct().count(),
                 "every copy carries the same event_id");
         assertEquals(scalar("SELECT event_id::text FROM outbox"), header(records.getFirst(), "event_id"));

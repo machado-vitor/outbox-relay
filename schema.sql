@@ -13,7 +13,6 @@ CREATE TABLE IF NOT EXISTS outbox (
     aggregate_id text        NOT NULL,         -- Kafka partition key
     event_type   text        NOT NULL,
     payload      jsonb       NOT NULL,
-    occurred_at  timestamptz NOT NULL DEFAULT now(),
     published_at timestamptz                   -- NULL = queued
 );
 

@@ -40,7 +40,18 @@ public class Relay {
     }
 
     /// One pass: claim up to BATCH unpublished rows, publish, mark. Returns how many were marked.
+    /// ponytail: a failure mid-batch re-sends the already-acked rows next sweep (duplicates,
+    /// consumers dedupe on event_id). Mark the partial batch instead if that ever matters.
     public int sweep() throws Exception {
+        try {
+            return publishBatch();
+        } catch (Exception e) {
+            db.rollback();
+            throw e;
+        }
+    }
+
+    private int publishBatch() throws Exception {
         var published = new ArrayList<Long>();
         try (var st = db.prepareStatement("""
                 SELECT id, event_id, aggregate_id, event_type, payload
@@ -51,12 +62,7 @@ public class Relay {
                 var record = new ProducerRecord<>(TOPIC, rs.getString("aggregate_id"), rs.getString("payload"));
                 record.headers().add("event_id", rs.getString("event_id").getBytes(StandardCharsets.UTF_8));
                 record.headers().add("event_type", rs.getString("event_type").getBytes(StandardCharsets.UTF_8));
-                try {
-                    kafka.send(record).get(); // blocks until acks=all
-                } catch (Exception e) {
-                    System.err.println("publish failed for " + rs.getString("event_id") + ", stopping batch: " + e.getMessage());
-                    break; // rows already acked still get marked below; this one stays queued
-                }
+                kafka.send(record).get(); // blocks until acks=all; a failure aborts the sweep, nothing is marked
                 published.add(rs.getLong("id"));
             }
         }
@@ -80,7 +86,6 @@ public class Relay {
             try {
                 while (relay.sweep() == BATCH) {}
             } catch (Exception e) {
-                relay.db.rollback();
                 System.err.println("sweep failed, retrying next poll: " + e.getMessage());
             }
             Thread.sleep(1000);
