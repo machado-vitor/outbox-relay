@@ -1,78 +1,12 @@
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.apache.kafka.clients.admin.Admin;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.kafka.KafkaContainer;
-import org.testcontainers.lifecycle.Startables;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.utility.MountableFile;
 
-/// Real Postgres, real Kafka, the real Relay. Each test writes rows the way
-/// the application would (orders + outbox in one statement), calls
-/// `relay.sweep()`, and reads the topic back.
-class RelayTest {
-
-    static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:18.6-alpine")
-            .withUsername("outbox").withPassword("outbox").withDatabaseName("outbox")
-            .withCopyFileToContainer(MountableFile.forHostPath("schema.sql"), "/docker-entrypoint-initdb.d/schema.sql");
-
-    static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka:4.3.1");
-
-    static Connection db;
-    static Relay relay;
-
-    @BeforeAll
-    static void start() throws Exception {
-        Startables.deepStart(POSTGRES, KAFKA).join();
-        db = connect();
-        try (var admin = Admin.create(Map.of("bootstrap.servers", (Object) KAFKA.getBootstrapServers()))) {
-            admin.createTopics(List.of(new NewTopic(Relay.TOPIC, 3, (short) 1))).all().get();
-        }
-        relay = new Relay(connect(), Relay.producer(KAFKA.getBootstrapServers()));
-    }
-
-    static KafkaConsumer<String, String> topic;
-
-    /// Empty tables, and a consumer parked at the end of the topic so each test
-    /// reads back only what it produced.
-    @BeforeEach
-    void startClean() throws Exception {
-        db.createStatement().execute("SET lock_timeout = '5s'; TRUNCATE orders, outbox RESTART IDENTITY");
-        var props = new Properties();
-        props.put("bootstrap.servers", KAFKA.getBootstrapServers());
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        received.clear();
-        topic = new KafkaConsumer<>(props);
-        var partitions = topic.partitionsFor(Relay.TOPIC).stream()
-                .map(p -> new TopicPartition(p.topic(), p.partition())).toList();
-        topic.assign(partitions);
-        topic.seekToEnd(partitions);
-        partitions.forEach(topic::position); // seekToEnd is lazy; force it before the test writes anything
-    }
-
-    @AfterEach
-    void closeConsumer() {
-        topic.close();
-    }
+/// Each test writes rows the way the application would (orders + outbox in one
+/// statement), calls `relay.sweep()`, and reads the topic back. Infrastructure lives in Env.
+class RelayTest extends Env {
 
     @Test
     void publishesTheOrderEventWithKeyHeadersAndPayload() throws Exception {
@@ -88,6 +22,23 @@ class RelayTest {
         assertEquals(scalar("SELECT event_id::text FROM outbox"), header(record, "event_id"));
         assertTrue(record.value().contains("\"customer_id\": \"cust-1\""), "value is the payload as written");
         assertEquals("1", scalar("SELECT count(*) FROM outbox WHERE published_at IS NOT NULL"));
+        assertEquals(0, relay.sweep(), "published_at is the cursor: nothing left to do");
+    }
+
+    /// The dual-write problem, solved: the outbox row lives in the business transaction,
+    /// so a rollback takes the event with it. There is nothing for the relay to find.
+    @Test
+    void aRolledBackTransactionPublishesNothing() throws Exception {
+        try (var tx = connect()) {
+            tx.setAutoCommit(false);
+            insertOrder(tx, "rolled-back");
+            tx.rollback();
+        }
+        var committed = insertOrder(db, "committed");
+
+        assertEquals(1, relay.sweep());
+        assertEquals(List.of(committed), keys(consume(1)), "only the committed order reaches the topic");
+        assertEquals("1", scalar("SELECT count(*) FROM outbox"));
     }
 
     /// Tx A takes the lower id but commits after tx B. A cursor on id would skip A; the relay does not.
@@ -95,20 +46,34 @@ class RelayTest {
     void aRowThatBecomesVisibleLateIsStillPublished() throws Exception {
         try (var a = connect()) {
             a.setAutoCommit(false);
-            insertOutbox(a, "A");   // id 1, not committed: invisible to the relay
-            insertOutbox(db, "B");  // id 2, committed
+            var idA = insertOrder(a, "A");   // lower id, not committed: invisible to the relay
+            var idB = insertOrder(db, "B");  // higher id, committed
 
             assertEquals(1, relay.sweep(), "only B is visible");
-            assertEquals(Set.of("B"), keys(consume(1)));
+            assertEquals(List.of(idB), keys(consume(1)));
 
-            a.commit();             // now id 1 appears, below the highest id already published
+            a.commit();                      // now A appears, below the highest id already published
 
             assertEquals(1, relay.sweep(), "A is picked up because it is unpublished, not because of its id");
-            var records = consume(2);
-            assertEquals(2, records.size());
-            assertEquals(Set.of("A", "B"), keys(records));
+            assertEquals(List.of(idB, idA), keys(consume(2)));
+            assertEquals(idA, scalar("SELECT aggregate_id FROM outbox ORDER BY id LIMIT 1"), "table is in id order");
             assertEquals("0", scalar("SELECT count(*) FROM outbox WHERE published_at IS NULL"));
         }
+    }
+
+    /// key = aggregate_id, so every event of one order lands on one partition, in order.
+    @Test
+    void eventsOfOneAggregateShareAPartitionInOrder() throws Exception {
+        var orderId = insertOrder(db, "cust-1");
+        updateOrder(db, orderId);
+
+        assertEquals(2, relay.sweep());
+
+        var records = consume(2);
+        assertEquals(List.of(orderId, orderId), keys(records));
+        assertEquals(1, partitions(records).size(), "one aggregate, one partition");
+        assertEquals(List.of("order.created", "order.updated"),
+                records.stream().map(r -> header(r, "event_type")).toList());
     }
 
     /// Broker unreachable: the row stays unpublished and the next sweep retries it.
@@ -133,69 +98,5 @@ class RelayTest {
         assertEquals(1, records.stream().map(r -> header(r, "event_id")).distinct().count(),
                 "every copy carries the same event_id");
         assertEquals(scalar("SELECT event_id::text FROM outbox"), header(records.getFirst(), "event_id"));
-    }
-
-    // --- writing the way the application does ---------------------------------
-
-    /// The orders row and its outbox row in ONE statement: atomic by construction.
-    static String insertOrder(Connection c, String customer) throws Exception {
-        var rs = c.createStatement().executeQuery("""
-                WITH o AS (INSERT INTO orders (id, customer_id, amount_cents)
-                           VALUES (gen_random_uuid(), '%s', 1000) RETURNING *)
-                INSERT INTO outbox (event_id, aggregate_id, event_type, payload)
-                SELECT gen_random_uuid(), o.id, 'order.created', to_jsonb(o) FROM o
-                RETURNING aggregate_id""".formatted(customer));
-        rs.next();
-        return rs.getString(1);
-    }
-
-    static void insertOutbox(Connection c, String key) throws Exception {
-        c.createStatement().execute("""
-                INSERT INTO outbox (event_id, aggregate_id, event_type, payload)
-                VALUES (gen_random_uuid(), '%s', 'order.created', '{}')""".formatted(key));
-    }
-
-    // --- reading both sides -----------------------------------------------------
-
-    static final List<ConsumerRecord<String, String>> received = new ArrayList<>();
-
-    /// Everything published since the test started. Waits up to 10 s for at least
-    /// `atLeast` records, then half a second more so stragglers (duplicates) show up too.
-    static List<ConsumerRecord<String, String>> consume(int atLeast) {
-        var deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
-        while (received.size() < atLeast && System.nanoTime() < deadline) {
-            poll();
-        }
-        var grace = System.nanoTime() + Duration.ofMillis(500).toNanos();
-        while (System.nanoTime() < grace) {
-            poll();
-        }
-        return received;
-    }
-
-    static void poll() {
-        topic.poll(Duration.ofMillis(200)).forEach(r -> {
-            received.add(r);
-            System.out.printf("  topic <- key=%s event_type=%s event_id=%s value=%s%n",
-                    r.key(), header(r, "event_type"), header(r, "event_id"), r.value());
-        });
-    }
-
-    static Set<String> keys(List<ConsumerRecord<String, String>> records) {
-        return records.stream().map(ConsumerRecord::key).collect(Collectors.toSet());
-    }
-
-    static String header(ConsumerRecord<String, String> r, String name) {
-        return new String(r.headers().lastHeader(name).value(), StandardCharsets.UTF_8);
-    }
-
-    static String scalar(String sql) throws Exception {
-        var rs = db.createStatement().executeQuery(sql);
-        rs.next();
-        return rs.getString(1);
-    }
-
-    static Connection connect() throws Exception {
-        return DriverManager.getConnection(POSTGRES.getJdbcUrl(), "outbox", "outbox");
     }
 }
