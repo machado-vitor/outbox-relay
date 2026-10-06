@@ -7,43 +7,40 @@ import java.util.Properties;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-/// Polls `outbox` for rows with `published_at IS NULL`, sends each to Kafka,
+/// Sweeps `outbox` for rows with `published_at IS NULL`, sends each to Kafka,
 /// and only after the broker acks marks the row published. No cursor: a row
 /// that becomes visible late (long transaction) is still picked up, because
 /// the question is "is it published?", not "is its id above where I stopped?".
 public class Relay {
 
-    static final String TOPIC = "order.events";
+    public static final String TOPIC = "order.events";
     static final int BATCH = 100;
-    static final long POLL_MS = 1000;
 
-    public static void main(String[] args) throws Exception {
+    private final Connection db;
+    private final KafkaProducer<String, String> kafka;
+
+    public Relay(Connection db, KafkaProducer<String, String> kafka) throws Exception {
+        this.db = db;
+        this.kafka = kafka;
+        db.setAutoCommit(false);
+    }
+
+    public static KafkaProducer<String, String> producer(String bootstrapServers) {
         var props = new Properties();
-        props.put("bootstrap.servers", "localhost:9092");
+        props.put("bootstrap.servers", bootstrapServers);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("acks", "all");                 // weaker lets a leader election drop a row already marked published
         props.put("retries", "0");                // the relay owns retries: the row stays unpublished and is swept again
         props.put("enable.idempotence", "false"); // idempotent producer requires retries > 0
-        props.put("max.block.ms", "5000");
-
-        try (var kafka = new KafkaProducer<String, String>(props);
-             var db = DriverManager.getConnection("jdbc:postgresql://localhost:5432/outbox", "outbox", "outbox")) {
-            db.setAutoCommit(false);
-            System.out.println("relay up: polling every " + POLL_MS + "ms");
-            while (true) {
-                try {
-                    while (sweep(db, kafka) == BATCH) {} // drain the backlog before sleeping
-                } catch (Exception e) {
-                    db.rollback();
-                    System.err.println("sweep failed, retrying next poll: " + e);
-                }
-                Thread.sleep(POLL_MS);
-            }
-        }
+        props.put("max.block.ms", "3000");
+        props.put("request.timeout.ms", "2000");
+        props.put("delivery.timeout.ms", "3000");
+        return new KafkaProducer<>(props);
     }
 
-    static int sweep(Connection db, KafkaProducer<String, String> kafka) throws Exception {
+    /// One pass: claim up to BATCH unpublished rows, publish, mark. Returns how many were marked.
+    public int sweep() throws Exception {
         var published = new ArrayList<Long>();
         try (var st = db.prepareStatement("""
                 SELECT id, event_id, aggregate_id, event_type, payload
@@ -57,7 +54,7 @@ public class Relay {
                 try {
                     kafka.send(record).get(); // blocks until acks=all
                 } catch (Exception e) {
-                    System.err.println("publish failed for " + rs.getString("event_id") + ", stopping batch: " + e);
+                    System.err.println("publish failed for " + rs.getString("event_id") + ", stopping batch: " + e.getMessage());
                     break; // rows already acked still get marked below; this one stays queued
                 }
                 published.add(rs.getLong("id"));
@@ -68,9 +65,25 @@ public class Relay {
                 st.setArray(1, db.createArrayOf("bigint", published.toArray()));
                 st.executeUpdate();
             }
-            System.out.println("published " + published.size());
         }
         db.commit();
         return published.size();
+    }
+
+    /// Runs forever: drain the backlog, sleep a second, repeat.
+    /// PG_URL / KAFKA env vars override the local defaults.
+    public static void main(String[] args) throws Exception {
+        var pg = System.getenv().getOrDefault("PG_URL", "jdbc:postgresql://localhost:5432/outbox");
+        var kafka = System.getenv().getOrDefault("KAFKA", "localhost:9092");
+        var relay = new Relay(DriverManager.getConnection(pg, "outbox", "outbox"), producer(kafka));
+        while (true) {
+            try {
+                while (relay.sweep() == BATCH) {}
+            } catch (Exception e) {
+                relay.db.rollback();
+                System.err.println("sweep failed, retrying next poll: " + e.getMessage());
+            }
+            Thread.sleep(1000);
+        }
     }
 }

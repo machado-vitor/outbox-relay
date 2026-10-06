@@ -1,0 +1,230 @@
+{
+    "version": "1.4.0",
+    "project": {
+        "name": "outbox-relay-test",
+        "directory": "/Users/vitor/projects/estudos/outbox-relay",
+        "workspaceDir": "/Users/vitor/projects/estudos/outbox-relay",
+        "sources": [
+            
+        ],
+        "dependencies": [
+            "outbox-relay"
+        ],
+        "classpath": [
+            "/Users/vitor/projects/estudos/outbox-relay/target/test-classes",
+            "/Users/vitor/projects/estudos/outbox-relay/target/classes",
+            "/Users/vitor/.m2/repository/org/postgresql/postgresql/42.7.12/postgresql-42.7.12.jar",
+            "/Users/vitor/.m2/repository/org/apache/kafka/kafka-clients/4.3.1/kafka-clients-4.3.1.jar",
+            "/Users/vitor/.m2/repository/com/github/luben/zstd-jni/1.5.6-10/zstd-jni-1.5.6-10.jar",
+            "/Users/vitor/.m2/repository/at/yawk/lz4/lz4-java/1.10.2/lz4-java-1.10.2.jar",
+            "/Users/vitor/.m2/repository/org/xerial/snappy/snappy-java/1.1.10.7/snappy-java-1.1.10.7.jar",
+            "/Users/vitor/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar",
+            "/Users/vitor/.m2/repository/org/slf4j/slf4j-nop/1.7.36/slf4j-nop-1.7.36.jar"
+        ],
+        "out": "/Users/vitor/projects/estudos/outbox-relay/target",
+        "classesDir": "/Users/vitor/projects/estudos/outbox-relay/target/test-classes",
+        "resources": [
+            
+        ],
+        "java": {
+            "options": [
+                "-g",
+                "--release",
+                "25",
+                "-encoding",
+                "UTF-8"
+            ]
+        },
+        "test": {
+            "frameworks": [
+                {
+                    "names": [
+                        "com.novocode.junit.JUnitFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.scalatest.tools.Framework",
+                        "org.scalatest.tools.ScalaTestFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.scalacheck.ScalaCheckFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "org.specs.runner.SpecsFramework",
+                        "org.specs2.runner.Specs2Framework",
+                        "org.specs2.runner.SpecsFramework"
+                    ]
+                },
+                {
+                    "names": [
+                        "utest.runner.Framework"
+                    ]
+                },
+                {
+                    "names": [
+                        "munit.Framework"
+                    ]
+                },
+                {
+                    "names": [
+                        "mill.testng.TestNGFramework"
+                    ]
+                }
+            ],
+            "options": {
+                "excludes": [
+                    
+                ],
+                "arguments": [
+                    {
+                        "args": [
+                            "-v",
+                            "-a"
+                        ],
+                        "framework": {
+                            "names": [
+                                "com.novocode.junit.JUnitFramework"
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        "platform": {
+            "name": "jvm",
+            "config": {
+                "home": "/Users/vitor/Library/Java/JavaVirtualMachines/openjdk-26.0.1/Contents/Home",
+                "options": [
+                    
+                ]
+            },
+            "mainClass": [
+                
+            ]
+        },
+        "resolution": {
+            "modules": [
+                {
+                    "organization": "org.apache.kafka",
+                    "name": "kafka-clients",
+                    "version": "4.3.1",
+                    "artifacts": [
+                        {
+                            "name": "kafka-clients",
+                            "path": "/Users/vitor/.m2/repository/org/apache/kafka/kafka-clients/4.3.1/kafka-clients-4.3.1.jar"
+                        },
+                        {
+                            "name": "kafka-clients",
+                            "classifier": "sources",
+                            "path": "/Users/vitor/.m2/repository/org/apache/kafka/kafka-clients/4.3.1/kafka-clients-4.3.1-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.slf4j",
+                    "name": "slf4j-api",
+                    "version": "1.7.36",
+                    "artifacts": [
+                        {
+                            "name": "slf4j-api",
+                            "path": "/Users/vitor/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar"
+                        },
+                        {
+                            "name": "slf4j-api",
+                            "classifier": "sources",
+                            "path": "/Users/vitor/.m2/repository/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.slf4j",
+                    "name": "slf4j-nop",
+                    "version": "1.7.36",
+                    "artifacts": [
+                        {
+                            "name": "slf4j-nop",
+                            "path": "/Users/vitor/.m2/repository/org/slf4j/slf4j-nop/1.7.36/slf4j-nop-1.7.36.jar"
+                        },
+                        {
+                            "name": "slf4j-nop",
+                            "classifier": "sources",
+                            "path": "/Users/vitor/.m2/repository/org/slf4j/slf4j-nop/1.7.36/slf4j-nop-1.7.36-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "com.github.luben",
+                    "name": "zstd-jni",
+                    "version": "1.5.6-10",
+                    "artifacts": [
+                        {
+                            "name": "zstd-jni",
+                            "path": "/Users/vitor/.m2/repository/com/github/luben/zstd-jni/1.5.6-10/zstd-jni-1.5.6-10.jar"
+                        },
+                        {
+                            "name": "zstd-jni",
+                            "classifier": "sources",
+                            "path": "/Users/vitor/.m2/repository/com/github/luben/zstd-jni/1.5.6-10/zstd-jni-1.5.6-10-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.postgresql",
+                    "name": "postgresql",
+                    "version": "42.7.12",
+                    "artifacts": [
+                        {
+                            "name": "postgresql",
+                            "path": "/Users/vitor/.m2/repository/org/postgresql/postgresql/42.7.12/postgresql-42.7.12.jar"
+                        },
+                        {
+                            "name": "postgresql",
+                            "classifier": "sources",
+                            "path": "/Users/vitor/.m2/repository/org/postgresql/postgresql/42.7.12/postgresql-42.7.12-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "at.yawk.lz4",
+                    "name": "lz4-java",
+                    "version": "1.10.2",
+                    "artifacts": [
+                        {
+                            "name": "lz4-java",
+                            "path": "/Users/vitor/.m2/repository/at/yawk/lz4/lz4-java/1.10.2/lz4-java-1.10.2.jar"
+                        },
+                        {
+                            "name": "lz4-java",
+                            "classifier": "sources",
+                            "path": "/Users/vitor/.m2/repository/at/yawk/lz4/lz4-java/1.10.2/lz4-java-1.10.2-sources.jar"
+                        }
+                    ]
+                },
+                {
+                    "organization": "org.xerial.snappy",
+                    "name": "snappy-java",
+                    "version": "1.1.10.7",
+                    "artifacts": [
+                        {
+                            "name": "snappy-java",
+                            "path": "/Users/vitor/.m2/repository/org/xerial/snappy/snappy-java/1.1.10.7/snappy-java-1.1.10.7.jar"
+                        },
+                        {
+                            "name": "snappy-java",
+                            "classifier": "sources",
+                            "path": "/Users/vitor/.m2/repository/org/xerial/snappy/snappy-java/1.1.10.7/snappy-java-1.1.10.7-sources.jar"
+                        }
+                    ]
+                }
+            ]
+        },
+        "tags": [
+            "test"
+        ]
+    }
+}
