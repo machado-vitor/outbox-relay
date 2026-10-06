@@ -19,10 +19,9 @@ public class Relay {
     private final Connection db;
     private final KafkaProducer<String, String> kafka;
 
-    public Relay(Connection db, KafkaProducer<String, String> kafka) throws Exception {
+    public Relay(Connection db, KafkaProducer<String, String> kafka) {
         this.db = db;
         this.kafka = kafka;
-        db.setAutoCommit(false);
     }
 
     public static KafkaProducer<String, String> producer(String bootstrapServers) {
@@ -33,7 +32,6 @@ public class Relay {
         props.put("acks", "all");                 // weaker lets a leader election drop a row already marked published
         props.put("retries", "0");                // the relay owns retries: the row stays unpublished and is swept again
         props.put("enable.idempotence", "false"); // idempotent producer requires retries > 0
-        props.put("max.block.ms", "3000");
         props.put("request.timeout.ms", "2000");
         props.put("delivery.timeout.ms", "3000");
         return new KafkaProducer<>(props);
@@ -43,15 +41,6 @@ public class Relay {
     /// ponytail: a failure mid-batch re-sends the already-acked rows next sweep (duplicates,
     /// consumers dedupe on event_id). Mark the partial batch instead if that ever matters.
     public int sweep() throws Exception {
-        try {
-            return publishBatch();
-        } catch (Exception e) {
-            db.rollback();
-            throw e;
-        }
-    }
-
-    private int publishBatch() throws Exception {
         var published = new ArrayList<Long>();
         try (var st = db.prepareStatement("""
                 SELECT id, event_id, aggregate_id, event_type, payload
@@ -66,13 +55,12 @@ public class Relay {
                 published.add(rs.getLong("id"));
             }
         }
-        if (!published.isEmpty()) {
+        if (!published.isEmpty()) { // one statement, autocommit: atomic on its own, nothing to lock before it
             try (var st = db.prepareStatement("UPDATE outbox SET published_at = now() WHERE id = ANY (?)")) {
                 st.setArray(1, db.createArrayOf("bigint", published.toArray()));
                 st.executeUpdate();
             }
         }
-        db.commit();
         return published.size();
     }
 

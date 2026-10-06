@@ -2,7 +2,7 @@
 
 Transactional outbox drained by our own poller. `orders` row and `outbox` row are written
 in one statement; `Relay.sweep()` reads `WHERE published_at IS NULL`, sends to Kafka with
-`acks=all`, then sets `published_at`. ~80 lines, plain JDBC + kafka-clients.
+`acks=all`, then sets `published_at`. ~70 lines, plain JDBC + kafka-clients.
 
 ```sh
 mvn test
