@@ -30,7 +30,7 @@ class Env {
             .withUsername("outbox").withPassword("outbox").withDatabaseName("outbox")
             .withCopyFileToContainer(MountableFile.forHostPath("schema.sql"), "/docker-entrypoint-initdb.d/schema.sql");
 
-    static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka:4.3.1");
+    static final KafkaContainer KAFKA = new KafkaContainer("apache/kafka:4.4.0");
 
     static Connection db;
     static Relay relay;
